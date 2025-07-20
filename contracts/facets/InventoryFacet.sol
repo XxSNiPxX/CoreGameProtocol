@@ -156,6 +156,7 @@ contract InventoryFacet is IERC1155, IERC1155MetadataURI {
         require(!s.itemExists[tokenId], "Item already exists");
 
         LibInventoryStorage.ItemAttribute storage item = s.itemAttributes[tokenId];
+        item.tokenId = tokenId; // <-- SET IT HERE
         item.name = name;
         item.description = description;
         item.imageURI = imageURI;
@@ -181,6 +182,7 @@ contract InventoryFacet is IERC1155, IERC1155MetadataURI {
         require(s.itemExists[tokenId], "Item doesn't exist");
 
         LibInventoryStorage.ItemAttribute storage item = s.itemAttributes[tokenId];
+        item.tokenId = tokenId; // <-- ENSURE CONSISTENCY
         item.name = name;
         item.description = description;
         item.imageURI = imageURI;
@@ -258,27 +260,15 @@ contract InventoryFacet is IERC1155, IERC1155MetadataURI {
         return (item.name, item.description, item.imageURI, item.attributes);
     }
 
-    function getAllItems()
-        external
-        view
-        returns (string[] memory names, string[] memory descriptions, string[] memory imageURIs, uint256[] memory tokenIds)
-    {
+    function getAllItems() external view returns (LibInventoryStorage.ItemAttribute[] memory items) {
         LibInventoryStorage.Layout storage s = LibInventoryStorage.layout();
         uint256 itemCount = s.allItemIds.length;
 
-        names = new string[](itemCount);
-        descriptions = new string[](itemCount);
-        imageURIs = new string[](itemCount);
-        tokenIds = new uint256[](itemCount);
+        items = new LibInventoryStorage.ItemAttribute[](itemCount);
 
         for (uint256 i = 0; i < itemCount; i++) {
             uint256 id = s.allItemIds[i];
-            LibInventoryStorage.ItemAttribute storage item = s.itemAttributes[id];
-
-            tokenIds[i] = id;
-            names[i] = item.name;
-            descriptions[i] = item.description;
-            imageURIs[i] = item.imageURI;
+            items[i] = s.itemAttributes[id];
         }
     }
 

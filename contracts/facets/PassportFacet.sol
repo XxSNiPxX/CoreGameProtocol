@@ -28,6 +28,7 @@ contract PassportFacet is IERC721, IERC721Metadata {
     event ItemTransferred(address indexed from, address indexed to, uint256 indexed tokenId, uint256 amount);
     event PassportMintedBatch(address indexed user, uint256[] tokenIds);
     event PassportTransferredBatch(address indexed from, address indexed to, uint256[] tokenIds);
+    event PassportBurned(address indexed user, uint256 indexed tokenId);
 
     function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
         return interfaceId == type(IERC721).interfaceId || interfaceId == type(IERC721Metadata).interfaceId;
@@ -239,6 +240,44 @@ contract PassportFacet is IERC721, IERC721Metadata {
 
     function getUserMetadata(uint256 tokenId) external view returns (LibPassportStorage.MetadataField[] memory) {
         return LibPassportStorage.layout().userMetadata[tokenId];
+    }
+
+    function burn(uint256 tokenId) external onlyCoreAuthorized {
+        LibPassportStorage.Layout storage s = LibPassportStorage.layout();
+        address owner = ownerOf(tokenId);
+
+        require(owner == msg.sender, "Not owner");
+
+        // Clear approvals
+        delete s.tokenApprovals[tokenId];
+
+        // Update balances and ownership
+        s.balances[owner]--;
+        delete s.owners[tokenId];
+        delete s.walletToTokenId[owner];
+
+        // Remove from allPassportHolders
+        _removePassportHolder(owner);
+
+        // Delete metadata and attributes
+        delete s.userMetadata[tokenId];
+        delete s.passportAttributes[tokenId];
+
+        // (Optional) Reset operator approvals for this user if needed
+        delete s.operatorApprovals[owner][owner];
+
+        // If you want to zero out inventory as part of burn (though it's transferred on transfer already)
+        LibInventoryStorage.Layout storage inv = LibInventoryStorage.layout();
+        uint256[] memory itemIds = inv.allItemIds;
+        for (uint256 i = 0; i < itemIds.length; i++) {
+            delete inv.balances[owner][itemIds[i]];
+        }
+
+        emit PassportBurned(owner, tokenId);
+    }
+
+    function totalSupply() external view returns (uint256) {
+        return LibPassportStorage.layout().allPassportHolders.length;
     }
 
     function getPassportAttributes(uint256 tokenId) external view returns (LibPassportStorage.Attribute[] memory) {

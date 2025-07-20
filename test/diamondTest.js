@@ -5,7 +5,7 @@ const { getUniqueSelectors } = require("./getUniqueSelectors");
 describe("CoreGameFactory + CoreGameDiamond Full Integration", function () {
   let factory, diamond, diamond2, owner, user, otherUser,hehe;
   const facetNames = ["PassportFacet", "InventoryFacet", "GameInfoFacet"];
-
+  FACTORY_ADDRESS="0x5FbDB2315678afecb367f032d93F642f64180aa3"
   async function expectRevert(promise, expectedError) {
     let threw = false;
     let errorMessage = '';
@@ -21,7 +21,7 @@ describe("CoreGameFactory + CoreGameDiamond Full Integration", function () {
     }
   }
 
-  async function deployDiamond( signer = null) {
+  async function deployDiamond( signer) {
       if (!signer) signer = (await ethers.getSigners())[0]; // default to owner
 
       const facets = [];
@@ -43,13 +43,23 @@ describe("CoreGameFactory + CoreGameDiamond Full Integration", function () {
       const tx = await connectedFactory.createCoreGame(facets);
       const receipt = await tx.wait();
 
-      const evt = receipt.logs.map(log => {
+      // Filter logs emitted by the factory only
+      const factoryLogs = receipt.logs.filter(log => log.address.toLowerCase() === factory.address.toLowerCase());
+
+      const evt = factoryLogs
+        .map(log => {
           try {
-              return connectedFactory.interface.parseLog(log);
+            return connectedFactory.interface.parseLog(log);
           } catch {
-              return null;
+            return null;
           }
-      }).find(e => e?.name === "CoreGameCreated");
+        })
+        .find(e => e?.name === "CoreGameCreated");
+
+      if (!evt) {
+        throw new Error("CoreGameCreated event not found in transaction logs");
+      }
+
 
       return await ethers.getContractAt("CoreGameDiamond", evt.args.coreGameDiamond);
   }
@@ -57,12 +67,11 @@ describe("CoreGameFactory + CoreGameDiamond Full Integration", function () {
 
   before(async () => {
     [owner, user, otherUser,hehe] = await ethers.getSigners();
-    const Factory = await ethers.getContractFactory("CoreGameFactory");
-    factory = await Factory.deploy();
-    await factory.deployed();
+    factory = await ethers.getContractAt("CoreGameFactory", FACTORY_ADDRESS);
 
-    diamond = await deployDiamond( otherUser);      // deploy as owner
-    diamond2 = await deployDiamond( user);  // deploy as user
+    diamond = await deployDiamond(otherUser);      // deploy as owner
+    diamond2 = await deployDiamond(user);  // deploy as user
+    console.log(diamond.address)
 
   });
 
@@ -308,17 +317,14 @@ describe("CoreGameFactory + CoreGameDiamond Full Integration", function () {
     const metadataAfter = await passport.getUserMetadata(id);
 
     for (let i = 0; i < updateData.length; i++) {
-      console.log(metadataAfter[i][0],updateData[i].trait_type)
       expect(metadataAfter[i][0]).to.equal(updateData[i].trait_type);
       expect(metadataAfter[i][1]).to.equal(updateData[i].value);
     }
-    console.log("yoo",metadataAfter)
 
     // === 8. Prevent original user from re-minting ===
     try {
       await passport.connect(user).mint();
     } catch (err) {
-      console.log(err.message)
       expect(err.message).to.include("Already minted");
     }
 
@@ -382,7 +388,6 @@ describe("CoreGameFactory + CoreGameDiamond Full Integration", function () {
     try {
       await passport.connect(user).transferFrom(user.address, hehe.address, userId)
     } catch (err) {
-      console.log(err)
       expect(err.message).to.include("Recipient already has a passport");
     }
     // === 4. Optional: confirm ownership remains unchanged ===
@@ -450,7 +455,6 @@ describe("CoreGameFactory + CoreGameDiamond Full Integration", function () {
     // // Step 5: Remove the item
     await inv.connect(otherUser).removeItem(itemId);
     balance2 = await inv.balanceOf(user.address, itemId);
-    console.log(balance2)
 
     // // Step 6: Confirm item is deleted
     // await expectRevert(inv.getItem(itemId), "Item does not exist");
@@ -460,7 +464,6 @@ describe("CoreGameFactory + CoreGameDiamond Full Integration", function () {
     it("should list all user items and passport holders", async () => {
       const inv = await ethers.getContractAt("InventoryFacet", diamond.address);
       const result = await inv.getUserItems(otherUser.address);
-      console.log(result,"RESULT ISSSS")
       expect(result.itemIds.length).to.equal(result.balances.length);
 
       const passport = await ethers.getContractAt("PassportFacet", diamond.address);
@@ -471,7 +474,6 @@ describe("CoreGameFactory + CoreGameDiamond Full Integration", function () {
     it("should reject passport transfer to zero address", async () => {
       const passport = await ethers.getContractAt("PassportFacet", diamond.address);
       const tokenId = await passport.getTokenIdForWallet(user.address);
-      console.log(tokenId,"dsadsa")
       await expectRevert(
         passport.connect(user).transferFrom(user.address, ethers.constants.AddressZero, tokenId)
       );
@@ -496,7 +498,6 @@ describe("CoreGameFactory + CoreGameDiamond Full Integration", function () {
       const passport = await ethers.getContractAt("PassportFacet", diamond.address);
       const tokenId = await passport.getTokenIdForWallet(hehe.address);
       const pass= await passport.getAllPassportHolders()
-      console.log(tokenId,"asddsds",pass,user.address,hehe.address,otherUser.address)
       await passport.connect(hehe).approve(owner.address, tokenId);
 
       await passport.connect(owner).transferFrom(hehe.address, owner.address, tokenId);

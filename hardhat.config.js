@@ -14,13 +14,13 @@ if (fs.existsSync("./secret.json")) {
 
 module.exports = {
     defaultNetwork: "testnet",
-    localhost: {
-        url: "http://127.0.0.1:8545",
-        chainId: 1337,
-    },
+
     networks: {
       hardhat: {
-          chainId: 1114, // Set this to match the network
+          chainId: 1110, // Set this to match the network
+      },
+      localhost: {
+        url: "http://127.0.0.1:8545", // or "http://localhost:8545"
       },
         testnet: {
             url: "https://rpc.test2.btcs.network",
@@ -39,7 +39,6 @@ module.exports = {
                         enabled: true,
                         runs: 200,
                     },
-                        viaIR: true
                 },
             },
         ],
