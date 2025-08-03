@@ -17,8 +17,8 @@ module.exports = {
 
     networks: {
       hardhat: {
-          chainId: 1110, // Set this to match the network
-      },
+                chainId: 1337,
+              },
       localhost: {
         url: "http://127.0.0.1:8545", // or "http://localhost:8545"
       },
@@ -30,19 +30,30 @@ module.exports = {
     },
 
     solidity: {
-        compilers: [
-            {
-                version: "0.8.28",
-                settings: {
-                    evmVersion: "paris",
-                    optimizer: {
-                        enabled: true,
-                        runs: 200,
-                    },
-                },
+      compilers: [
+        {
+          version: "0.8.26",
+          settings: {
+            evmVersion: "shanghai",
+            optimizer: {
+              enabled: true,
+              runs: 200,
             },
-        ],
-    },
+            outputSelection: {
+              "*": {
+                "*": [
+                  "abi",
+                  "evm.bytecode.object",
+                  "evm.deployedBytecode.object",
+                  "metadata"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+,
 
     paths: {
         sources: "./contracts",

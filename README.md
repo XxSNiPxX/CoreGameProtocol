@@ -1,131 +1,137 @@
-# Diamond-1-Hardhat Implementation
+# Core Game Engine – Diamond-Based Modular Architecture
 
-This is a reference implementation for [EIP-2535 Diamonds](https://github.com/ethereum/EIPs/issues/2535). To learn about other implementations go here: https://github.com/mudgen/diamond
+This repository hosts the smart contract implementation for **Core Game Engine**, a modular, upgradeable, and extensible on-chain gaming infrastructure built on the [EIP-2535 Diamond Standard](https://eips.ethereum.org/EIPS/eip-2535). Inspired by `diamond-1-hardhat`, this framework supports **modular game protocols**, **per-game deployments**, and **custom extension modules** such as **inventory**, **passport**, and **game tokens**.
 
-**Note:** The loupe functions in DiamondLoupeFacet.sol MUST be added to a diamond and are required by the EIP-2535 Diamonds standard.
+> **Live Deployment:**
+> 🏭 **CoreGameFactory** (Main Deployment Address): `0x0F1C75b8aA1A294C52F6F120d73F33A75bd92BDB`
+> 💠 **Example CoreGameProtocol Diamond (Agario)**: `0x9316626e8dED3409Caaaf4c2e7a46b2d5bb68f7A`
 
-**Note:** In this implementation the loupe functions are NOT gas optimized. The `facets`, `facetFunctionSelectors`, `facetAddresses` loupe functions are not meant to be called on-chain and may use too much gas or run out of gas when called in on-chain transactions. In this implementation these functions should be called by off-chain software like websites and Javascript libraries etc., where gas costs do not matter.
 
+---
 
-## Installation
+## 🧱 Motivation
 
-1. Clone this repo:
-```console
-git clone git@github.com:mudgen/diamond-1-hardhat.git
+Traditional monolithic smart contract systems make it hard to:
+
+- Upgrade individual components without redeploying the whole system.
+- Allow developers to create and manage game-specific logic with isolated modules.
+- Extend games with user identities, inventories, or other mechanics without bloating the core protocol.
+
+**CoreGameEngine** solves this via:
+
+- A **Factory pattern** to deploy per-game diamonds (`CoreGameProtocol`) on demand.
+- A **modular facet system** where each game or module (e.g., Inventory, Passport) is a plug-and-play facet.
+- Built-in support for ERC721 (for user identities) and ERC1155 (for inventories, game items).
+
+---
+
+## 🗂️ Contract Structure
+
+```
+contracts/
+├── CoreGameFactory.sol                # Main factory that deploys per-game diamonds
+├── CoreGameProtocol.sol              # The core Diamond contract for each game
+├── facets/
+│   ├── DiamondCutFacet.sol           # Required facet for diamond upgrades
+│   ├── DiamondLoupeFacet.sol        # Required for EIP-2535 inspection
+│   ├── GameLogicFacet.sol            # Game-specific logic (e.g., Agario tick/update loop)
+│   ├── InventoryFacet.sol            # ERC-1155-based inventory system
+│   ├── PassportFacet.sol             # ERC-721-based identity/passport system
+│   └── RolesFacet.sol                # Assign roles (Player, Admin, Moderator) per game
+├── libraries/
+│   └── LibDiamond.sol                # Diamond storage & internal logic
+├── modules/
+│   ├── ERC1155Inventory.sol          # Optional off-facet module (can also be a facet)
+│   └── ERC721Passport.sol            # Identity NFT module
 ```
 
-2. Install NPM packages:
-```console
-cd diamond-1-hardhat
+---
+
+## 🚀 Deployment
+
+1. Clone the repo:
+```bash
+git clone https://github.com/your-username/core-game-engine.git
+cd core-game-engine
+```
+
+2. Install dependencies:
+```bash
 npm install
 ```
 
-## Deployment
-
-```console
-npx hardhat run scripts/deploy.js
+3. Deploy factory and diamond example:
+```bash
+npx hardhat run scripts/deployFactory.js --network <your-network>
+npx hardhat run scripts/deployGame.js --network <your-network>
 ```
 
-### How the scripts/deploy.js script works
+> Add your RPC or Hardhat network config in `hardhat.config.js`.
 
-The [scripts/deploy.js](scripts/deploy.js) deployment script includes comments to explain how it works.
+---
 
-How a diamond is deployed is not part of the EIP-2535 Diamonds standard. This implementation shows an example. 
+## 🧪 Testing
 
-## Run tests:
-```console
+Run all unit tests:
+
+```bash
 npx hardhat test
 ```
 
-## Upgrade a diamond
+---
 
-Check the `test/diamondTest.js` file for examples of upgrades.
+## 🧩 Adding and Upgrading Facets
 
-Note that upgrade functionality is optional. It is possible to deploy a diamond that can't be upgraded, which is a 'Single Cut Diamond'.  It is also possible to deploy an upgradeable diamond and at a later date remove its `diamondCut` function so it can't be upgraded any more.
+All facets can be dynamically added, replaced, or removed using the DiamondCutFacet.
 
-Note that any number of functions from any number of facets can be added/replaced/removed on a diamond in a single transaction. In addition an initialization function can be executed in the same transaction as an upgrade to initialize any state variables required for an upgrade. This 'everything done in a single transaction' capability ensures a diamond maintains a correct and consistent state during upgrades.
-
-## Facet Information
-
-**Note:** In this implementation the loupe functions are NOT gas optimized. The `facets`, `facetFunctionSelectors`, `facetAddresses` loupe functions are not meant to be called on-chain and may use too much gas or run out of gas when called in on-chain transactions. In this implementation these functions should be called by off-chain software like websites and Javascript libraries etc., where gas costs do not matter as much.
-
-However the `facetAddress` loupe function is gas efficient and can be called in on-chain transactions.
-
-The `contracts/Diamond.sol` file shows an example of implementing a diamond.
-
-The `contracts/facets/DiamondCutFacet.sol` file shows how to implement the `diamondCut` external function.
-
-The `contracts/facets/DiamondLoupeFacet.sol` file shows how to implement the four standard loupe functions.
-
-The `contracts/libraries/LibDiamond.sol` file shows how to implement Diamond Storage and a `diamondCut` internal function.
-
-The `scripts/deploy.js` file shows how to deploy a diamond.
-
-The `test/diamondTest.js` file gives tests for the `diamondCut` function and the Diamond Loupe functions.
-
-## How to Get Started Making Your Diamond
-
-1. Reading and understand [EIP-2535 Diamonds](https://eips.ethereum.org/EIPS/eip-2535). If something is unclear let me know!
-
-2. Use a diamond reference implementation. You are at the right place because this is the README for a diamond reference implementation.
-
-This diamond implementation is boilerplate code that makes a diamond compliant with EIP-2535 Diamonds.
-
-Specifically you can copy and use the [DiamondCutFacet.sol](./contracts/facets/DiamondCutFacet.sol) and [DiamondLoupeFacet.sol](./contracts/facets/DiamondLoupeFacet.sol) contracts. They implement the `diamondCut` function and the loupe functions.
-
-The [Diamond.sol](./contracts/Diamond.sol) contract could be used as is, or it could be used as a starting point and customized. This contract is the diamond. Its deployment creates a diamond. It's address is a stable diamond address that does not change.
-
-The [LibDiamond.sol](./contracts/libraries/LibDiamond.sol) library could be used as is. It shows how to implement Diamond Storage. This contract includes contract ownership which you might want to change if you want to implement DAO-based ownership or other form of contract ownership. Go for it. Diamonds can work with any kind of contract ownership strategy. This library contains an internal function version of `diamondCut` that can be used in the constructor of a diamond or other places.
-
-## Calling Diamond Functions
-
-In order to call a function that exists in a diamond you need to use the ABI information of the facet that has the function.
-
-Here is an example that uses web3.js:
-
-```javascript
-const myUsefulFacet = new web3.eth.Contract(MyUsefulFacet.abi, diamondAddress);
+```js
+const diamondCut = await ethers.getContractAt("DiamondCutFacet", diamondAddress);
+await diamondCut.diamondCut(
+  [/* facet cuts */],
+  ethers.constants.AddressZero,
+  "0x"
+);
 ```
 
-In the code above we create a contract variable so we can call contract functions with it.
+Each facet must follow EIP-2535 and define function selectors using the `IDiamondCut.FacetCut` format.
 
-In this example we know we will use a diamond because we pass a diamond's address as the second argument. But we are using an ABI from the MyUsefulFacet facet so we can call functions that are defined in that facet. MyUsefulFacet's functions must have been added to the diamond (using diamondCut) in order for the diamond to use the function information provided by the ABI of course.
+---
 
-Here is another example that uses hardhat:
+## 📦 How to Use in Your Game
 
-```javascript
-const diamondLoupeFacet = await ethers.getContractAt('DiamondLoupeFacet', diamondAddress)
+1. Deploy your own `CoreGameProtocol` via the factory.
+2. Attach your game-specific logic (e.g., player updates, tick loop) as a facet.
+3. Optionally attach Passport, Inventory, or new custom modules.
+4. Use `ethers.getContractAt(facetName, gameAddress)` to call facet methods.
+
+Example:
+```js
+const game = await ethers.getContractAt("GameLogicFacet", yourGameAddress);
+await game.startTickLoop();
 ```
 
-Similarly you need to use the ABI of a facet in Solidity code in order to call functions from a diamond. Here's an example of Solidity code that calls a function from a diamond:
+---
 
-```solidity
-string result = MyUsefulFacet(address(diamondContract)).getResult()
-```
+## 📘 Learn More About Diamonds
 
+- [EIP-2535 Diamonds](https://eips.ethereum.org/EIPS/eip-2535)
+- [Diamond Intro (Substack)](https://eip2535diamonds.substack.com/p/introduction-to-the-diamond-standard)
+- [Awesome Diamonds](https://github.com/mudgen/awesome-diamonds)
 
-## Get Help and Join the Community
+---
 
-If you need help or would like to discuss diamonds then send me a message [on twitter](https://twitter.com/mudgen), or [email me](mailto:nick@perfectabstractions.com). Or join the [EIP-2535 Diamonds Discord server](https://discord.gg/kQewPw2).
+## 📤 Community and Support
 
-## Useful Links
-1. [EIP-2535 Diamonds](https://eips.ethereum.org/EIPS/eip-2535)
-2. [Introduction to the Diamond Standard, EIP-2535 Diamonds](https://eip2535diamonds.substack.com/p/introduction-to-the-diamond-standard)
-3. [EIP2535 Diamonds Documentation](https://eip2535diamonds.substack.com/)
-4. [Awesome Diamonds](https://github.com/mudgen/awesome-diamonds)
+This implementation was inspired by [@mudgen](https://twitter.com/mudgen)'s work.
 
-## Author
+If you're building a game or module and want to integrate with the Core Game Engine, feel free to:
 
-This example implementation was written by Nick Mudge.
+- Open an issue
+- Submit a PR
+- Reach out via Telegram or Twitter *(add your links if available)*
 
-Contact:
+---
 
-- https://twitter.com/mudgen
-- nick@perfectabstractions.com
-- https://github.com/mudgen
+## 🪪 License
 
-## License
-
-MIT license. See the license file.
-Anyone can use or modify this software for their purposes.
-
+MIT — Use freely, modify extensively, attribute responsibly.

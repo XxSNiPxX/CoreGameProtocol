@@ -7,6 +7,13 @@ import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC1155MetadataURI} from "@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol"; // Import the correct interface
+struct ItemWithId {
+    uint256 tokenId;
+    string name;
+    string description;
+    string imageURI;
+    LibInventoryStorage.Attribute[] attributes;
+}
 
 contract InventoryFacet is IERC1155, IERC1155MetadataURI {
     using LibInventoryStorage for LibInventoryStorage.Layout;
@@ -156,7 +163,7 @@ contract InventoryFacet is IERC1155, IERC1155MetadataURI {
         require(!s.itemExists[tokenId], "Item already exists");
 
         LibInventoryStorage.ItemAttribute storage item = s.itemAttributes[tokenId];
-        item.tokenId = tokenId; // <-- SET IT HERE
+        item.tokenId = tokenId; // <-- important!
         item.name = name;
         item.description = description;
         item.imageURI = imageURI;
@@ -182,7 +189,7 @@ contract InventoryFacet is IERC1155, IERC1155MetadataURI {
         require(s.itemExists[tokenId], "Item doesn't exist");
 
         LibInventoryStorage.ItemAttribute storage item = s.itemAttributes[tokenId];
-        item.tokenId = tokenId; // <-- ENSURE CONSISTENCY
+        item.tokenId = tokenId; // <-- important!
         item.name = name;
         item.description = description;
         item.imageURI = imageURI;
@@ -260,15 +267,29 @@ contract InventoryFacet is IERC1155, IERC1155MetadataURI {
         return (item.name, item.description, item.imageURI, item.attributes);
     }
 
-    function getAllItems() external view returns (LibInventoryStorage.ItemAttribute[] memory items) {
+    function getAllItems() external view returns (ItemWithId[] memory items) {
         LibInventoryStorage.Layout storage s = LibInventoryStorage.layout();
         uint256 itemCount = s.allItemIds.length;
-
-        items = new LibInventoryStorage.ItemAttribute[](itemCount);
+        items = new ItemWithId[](itemCount);
 
         for (uint256 i = 0; i < itemCount; i++) {
             uint256 id = s.allItemIds[i];
-            items[i] = s.itemAttributes[id];
+            LibInventoryStorage.ItemAttribute storage stored = s.itemAttributes[id];
+
+            // Deep copy attributes
+            uint256 attrCount = stored.attributes.length;
+            LibInventoryStorage.Attribute[] memory attrs = new LibInventoryStorage.Attribute[](attrCount);
+            for (uint256 j = 0; j < attrCount; j++) {
+                attrs[j] = stored.attributes[j];
+            }
+
+            items[i] = ItemWithId({
+                tokenId: stored.tokenId,
+                name: stored.name,
+                description: stored.description,
+                imageURI: stored.imageURI,
+                attributes: attrs
+            });
         }
     }
 

@@ -216,6 +216,38 @@ contract PassportFacet is IERC721, IERC721Metadata {
         emit UserMetadataUpdated(tokenId);
     }
 
+    function removeGlobalUserMetadata(string calldata key) external onlyCoreAuthorized {
+        LibPassportStorage.Layout storage s = LibPassportStorage.layout();
+        require(bytes(s.globalUserMetadataTemplate[key].trait_type).length != 0, "Metadata does not exist");
+
+        delete s.globalUserMetadataTemplate[key];
+
+        for (uint i = 0; i < s.globalUserMetadataKeys.length; i++) {
+            if (keccak256(bytes(s.globalUserMetadataKeys[i])) == keccak256(bytes(key))) {
+                s.globalUserMetadataKeys[i] = s.globalUserMetadataKeys[s.globalUserMetadataKeys.length - 1];
+                s.globalUserMetadataKeys.pop();
+                break;
+            }
+        }
+    }
+
+    function removeGlobalAttribute(string calldata key) external onlyCoreAuthorized {
+        LibPassportStorage.Layout storage s = LibPassportStorage.layout();
+        require(bytes(s.globalTemplateAttributes[key].trait_type).length != 0, "Attribute does not exist");
+
+        // Delete the attribute mapping
+        delete s.globalTemplateAttributes[key];
+
+        // Remove from the key list
+        for (uint i = 0; i < s.globalTraitKeys.length; i++) {
+            if (keccak256(bytes(s.globalTraitKeys[i])) == keccak256(bytes(key))) {
+                s.globalTraitKeys[i] = s.globalTraitKeys[s.globalTraitKeys.length - 1];
+                s.globalTraitKeys.pop();
+                break;
+            }
+        }
+    }
+
     function getGlobalUserMetadataTemplate() external view returns (LibPassportStorage.MetadataField[] memory) {
         LibPassportStorage.Layout storage s = LibPassportStorage.layout();
         uint256 length = s.globalUserMetadataKeys.length;

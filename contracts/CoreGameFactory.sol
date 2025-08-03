@@ -40,13 +40,14 @@ contract CoreGameFactory {
         initialFaucets[1] = InitialFaucets("OwnershipFacet", address(ownershipFacet));
         initialFaucets[2] = InitialFaucets("DiamondLoupeFacet", address(diamondLoupeFacet));
         for (uint i = 0; i < initialFaucets.length; i++) {
-            console.log("initialFaucets", i);
+            console.log("initialFaucets", i, address(facetRegistryFacet));
         }
         CoreGameDiamond diamond = new CoreGameDiamond(
             msg.sender,
             initialFaucets,
             _facetCuts // This would be empty for now or can be passed dynamically
         );
+        console.log("here");
 
         // Save the game information
         games[gameId] = GameInfo({developer: msg.sender, coreGameDiamond: address(diamond)});

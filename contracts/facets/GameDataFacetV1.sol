@@ -20,12 +20,19 @@ contract GameDataFacetV1 {
         string name;
         address facetAddress;
     }
+    struct ItemWithId {
+        uint256 tokenId;
+        string name;
+        string description;
+        string imageURI;
+        LibInventoryStorage.Attribute[] attributes;
+    }
 
     struct GlobalGameData {
         LibGameInfoStorage.GameMetadata metadata;
         uint256 totalPassports;
         uint256 totalItems;
-        LibInventoryStorage.ItemAttribute[] allItems;
+        ItemWithId[] allItems; // <- updated
         LibPassportStorage.Attribute[] globalPassportTraits;
         LibPassportStorage.MetadataField[] globalUserMetadata;
         FacetInfo[] deployedFacets;
@@ -44,6 +51,9 @@ contract GameDataFacetV1 {
         }
 
         snapshots = new PlayerSnapshot[](count);
+
+        // Deep copy attributes
+
         for (uint256 idx = 0; idx < count; idx++) {
             address user = p.allPassportHolders[offset + idx];
             uint256 tokenId = p.walletToTokenId[user];
@@ -51,6 +61,16 @@ contract GameDataFacetV1 {
             uint256 itemCount = inv.allItemIds.length;
             uint256[] memory itemIds = new uint256[](itemCount);
             uint256[] memory itemBalances = new uint256[](itemCount);
+            LibPassportStorage.Attribute[] memory passportAttrs = new LibPassportStorage.Attribute[](p.passportAttributes[tokenId].length);
+            for (uint i = 0; i < passportAttrs.length; i++) {
+                passportAttrs[i] = p.passportAttributes[tokenId][i];
+            }
+
+            // Deep copy metadata
+            LibPassportStorage.MetadataField[] memory userMetadata = new LibPassportStorage.MetadataField[](p.userMetadata[tokenId].length);
+            for (uint i = 0; i < userMetadata.length; i++) {
+                userMetadata[i] = p.userMetadata[tokenId][i];
+            }
             for (uint256 j = 0; j < itemCount; j++) {
                 uint256 itemId = inv.allItemIds[j];
                 itemIds[j] = itemId;
@@ -60,8 +80,8 @@ contract GameDataFacetV1 {
             snapshots[idx] = PlayerSnapshot({
                 wallet: user,
                 tokenId: tokenId,
-                passportAttributes: p.passportAttributes[tokenId],
-                userMetadata: p.userMetadata[tokenId],
+                passportAttributes: passportAttrs,
+                userMetadata: userMetadata,
                 itemIds: itemIds,
                 itemBalances: itemBalances
             });
@@ -76,9 +96,25 @@ contract GameDataFacetV1 {
 
         // All items
         uint256 itemCount = inv.allItemIds.length;
-        LibInventoryStorage.ItemAttribute[] memory allItems = new LibInventoryStorage.ItemAttribute[](itemCount);
+        ItemWithId[] memory allItems = new ItemWithId[](itemCount);
         for (uint256 m = 0; m < itemCount; m++) {
-            allItems[m] = inv.itemAttributes[inv.allItemIds[m]];
+            uint256 id = inv.allItemIds[m];
+            LibInventoryStorage.ItemAttribute storage stored = inv.itemAttributes[id];
+
+            // Deep copy attributes
+            uint256 attrCount = stored.attributes.length;
+            LibInventoryStorage.Attribute[] memory attrs = new LibInventoryStorage.Attribute[](attrCount);
+            for (uint256 j = 0; j < attrCount; j++) {
+                attrs[j] = stored.attributes[j];
+            }
+
+            allItems[m] = ItemWithId({
+                tokenId: stored.tokenId,
+                name: stored.name,
+                description: stored.description,
+                imageURI: stored.imageURI,
+                attributes: attrs
+            });
         }
 
         // Traits

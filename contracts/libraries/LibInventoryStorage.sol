@@ -11,7 +11,7 @@ library LibInventoryStorage {
     }
 
     struct ItemAttribute {
-        uint256 tokenId; // <--- add this
+        uint256 tokenId;
         string name; // e.g. "Sword"
         string description; // Optional
         string imageURI; // e.g. ipfs://.../sword.png
