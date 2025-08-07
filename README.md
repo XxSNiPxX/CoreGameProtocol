@@ -1,6 +1,6 @@
 # Core Game Engine – Diamond-Based Modular Architecture
 
-This repository hosts the smart contract implementation for **Core Game Engine**, a modular, upgradeable, and extensible on-chain gaming infrastructure built on the [EIP-2535 Diamond Standard](https://eips.ethereum.org/EIPS/eip-2535). Inspired by `diamond-1-hardhat`, this framework supports **modular game protocols**, **per-game deployments**, and **custom extension modules** such as **inventory**, **passport**, and **game tokens**.
+This repository hosts the smart contract implementation for **Core Game Engine**, a modular, upgradeable, and extensible on-chain gaming infrastructure built on the [EIP-2535 Diamond Standard](https://eips.ethereum.org/EIPS/eip-2535). Inspired by `diamond-1-hardhat`, this framework supports **modular game protocols**, **per-game deployments**, and **custom extension modules** such as **inventory**, **passport**, and **game ui**.
 
 > **Testnet Deployment:**
 > 🏭 **CoreGameFactory** (Testnet Deployment Address): `0x0F1C75b8aA1A294C52F6F120d73F33A75bd92BDB`
