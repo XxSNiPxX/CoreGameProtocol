@@ -25,7 +25,7 @@ Traditional monolithic smart contract systems make it hard to:
 
 ---
 
-## 🗂️ Contract Structure
+## 🗂️ Contract Structure (important)
 
 ```
 contracts/
@@ -37,7 +37,6 @@ contracts/
 │   ├── GameLogicFacet.sol            # Game-specific logic (e.g., Agario tick/update loop)
 │   ├── InventoryFacet.sol            # ERC-1155-based inventory system
 │   ├── PassportFacet.sol             # ERC-721-based identity/passport system
-│   └── RolesFacet.sol                # Assign roles (Player, Admin, Moderator) per game
 ├── libraries/
 │   └── LibDiamond.sol                # Diamond storage & internal logic
 ├── modules/
@@ -51,8 +50,8 @@ contracts/
 
 1. Clone the repo:
 ```bash
-git clone https://github.com/your-username/core-game-engine.git
-cd core-game-engine
+git clone https://github.com/your-username/CoreGameProtocol.git
+cd CoreGameProtocol
 ```
 
 2. Install dependencies:
